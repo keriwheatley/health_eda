@@ -1,0 +1,2305 @@
+---
+output: 
+  html_document: 
+    fig_height: 10
+    fig_width: 10
+    theme: lumen
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+library(sandwich)
+library(gridExtra)
+library(plyr)
+library(data.table)
+library(ggplot2)
+library(bit64)
+library(corrplot)
+library(ggthemes)
+library(stargazer)
+setwd("/Users/kwheatley/Desktop/Interview/Datasets")
+resp <- fread("ehresp_2014.csv",stringsAsFactors = T)
+linreg <- fread("linear_reg.csv",stringsAsFactors = T)
+```
+
+#American Eating & Health Analysis
+
+###Keri Wheatley
+
+#### January 31, 2017 
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+##Introduction
+
+The U.S. Department of Agriculture’s Economic Research Service sponsored the Eating & Health (EH) Module of the American Time Use Survey (ATUS). The ATUS is sponsored by the Bureau of Labor Statistics and conducted by the U.S. Census Bureau. The purpose of this document is to provide information about the variables available on the ATUS EH Module data files: the EH Respondent file and the EH Activity file. The
+EH Module data files are currently available for 2014 and contain information gathered through the 2014 ATUS interviews. All EH Module questions were asked at the end of the ATUS interview. The supplement surveys individuals aged 15 and up from 
+a nationally representative sample of approximately 2,100 sample 
+households each month. Below are the main variables of interest:
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. primary eating
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2. secondary eating (eating while performing an activity)
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3. grocery shopping
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4. meal preparation
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 5. food assistance participation
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 6. general health, height, and weight
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 7. exercise
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 8. household income
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+## Question
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Can we find patterns between health, habits, and income?
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Can we use these patterns to predict health?
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+## Exploratory Analysis{.tabset}
+```{r, include=FALSE}
+count = NROW(resp)
+corr_data = resp
+names(corr_data)[names(corr_data) == 'tucaseid'] <- 'ID1'
+names(corr_data)[names(corr_data) == 'tulineno'] <- 'ID2'
+names(corr_data)[names(corr_data) == 'eeincome1'] <- 'IncomeCalc1'
+names(corr_data)[names(corr_data) == 'erbmi'] <- 'BMI'
+names(corr_data)[names(corr_data) == 'erhhch'] <- 'Household Composition'
+names(corr_data)[names(corr_data) == 'erincome'] <- 'Income'
+names(corr_data)[names(corr_data) == 'erspemch'] <- 'Enployment Change'
+names(corr_data)[names(corr_data) == 'ertpreat'] <- 'Primary Eating'
+names(corr_data)[names(corr_data) == 'ertseat'] <- 'Secondary Eating'
+names(corr_data)[names(corr_data) == 'ethgt'] <- 'Height Topcode'
+names(corr_data)[names(corr_data) == 'etwgt'] <- 'Weight Topcode'
+names(corr_data)[names(corr_data) == 'eudietsoda'] <- 'Soda Type'
+names(corr_data)[names(corr_data) == 'eudrink'] <- 'Is Drink'
+names(corr_data)[names(corr_data) == 'euexercise'] <- 'Is Exercise'
+names(corr_data)[names(corr_data) == 'euexfreq'] <- 'Exercise Frequency'
+names(corr_data)[names(corr_data) == 'eufastfd'] <- 'Is Fast Food Past Week'
+names(corr_data)[names(corr_data) == 'eufastfdfrq'] <- 'Fast Food Freq'
+names(corr_data)[names(corr_data) == 'euffyday'] <- 'Is Fast Food Past Day'
+names(corr_data)[names(corr_data) == 'eufdsit'] <- 'Enough Food'
+names(corr_data)[names(corr_data) == 'eufinlwgt'] <- 'Finalized Weight'
+names(corr_data)[names(corr_data) == 'eusnap'] <- 'SNAP'
+names(corr_data)[names(corr_data) == 'eugenhth'] <- 'Health'
+names(corr_data)[names(corr_data) == 'eugroshp'] <- 'Is Primary Shopper'
+names(corr_data)[names(corr_data) == 'euhgt'] <- 'Height'
+names(corr_data)[names(corr_data) == 'euinclvl'] <- 'IncomeCalc3'
+names(corr_data)[names(corr_data) == 'euincome2'] <- 'IncomeCalc2'
+names(corr_data)[names(corr_data) == 'eumeat'] <- 'Prepare Meat'
+names(corr_data)[names(corr_data) == 'eumilk'] <- 'Raw Milk'
+names(corr_data)[names(corr_data) == 'eueat'] <- 'Snack During Activity'
+names(corr_data)[names(corr_data) == 'euprpmel'] <- 'Is Primary Cook'
+names(corr_data)[names(corr_data) == 'eusoda'] <- 'Is Non-H20 Beverage'
+names(corr_data)[names(corr_data) == 'eustores'] <- 'Primary Grocer Type'
+names(corr_data)[names(corr_data) == 'eustreason'] <- 'Grocer Type Reason'
+names(corr_data)[names(corr_data) == 'eutherm'] <- 'Food Thermometer'
+names(corr_data)[names(corr_data) == 'euwgt'] <- 'Weight'
+names(corr_data)[names(corr_data) == 'euwic'] <- 'WIC'
+names(corr_data)[names(corr_data) == 'exincome1'] <- 'IncomeCalc4'
+M = cor(corr_data)
+```
+
+### 
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Data Availability
+
+There are a total of `r count` samples in the dataset. Here is the data availability for each variable.
+
+```{r, include=FALSE}
+columns = colnames(corr_data, do.NULL = TRUE, prefix = "col")
+percent_avail = c(
+  NROW(resp[tucaseid>0])/NROW(resp),
+NROW(resp[tulineno>0])/NROW(resp),
+NROW(resp[eeincome1>0])/NROW(resp),
+NROW(resp[erbmi>0])/NROW(resp),
+NROW(resp[erhhch>0])/NROW(resp),
+NROW(resp[erincome>0])/NROW(resp),
+NROW(resp[erspemch>0])/NROW(resp),
+NROW(resp[ertpreat>0])/NROW(resp),
+NROW(resp[ertseat>0])/NROW(resp),
+NROW(resp[ethgt>0])/NROW(resp),
+NROW(resp[etwgt>0])/NROW(resp),
+NROW(resp[eudietsoda>0])/NROW(resp),
+NROW(resp[eudrink>0])/NROW(resp),
+NROW(resp[eueat>0])/NROW(resp),
+NROW(resp[euexercise>0])/NROW(resp),
+NROW(resp[euexfreq>0])/NROW(resp),
+NROW(resp[eufastfd>0])/NROW(resp),
+NROW(resp[eufastfdfrq>0])/NROW(resp),
+NROW(resp[euffyday>0])/NROW(resp),
+NROW(resp[eufdsit>0])/NROW(resp),
+NROW(resp[eufinlwgt>0])/NROW(resp),
+NROW(resp[eusnap>0])/NROW(resp),
+NROW(resp[eugenhth>0])/NROW(resp),
+NROW(resp[eugroshp>0])/NROW(resp),
+NROW(resp[euhgt>0])/NROW(resp),
+NROW(resp[euinclvl>0])/NROW(resp),
+NROW(resp[euincome2>0])/NROW(resp),
+NROW(resp[eumeat>0])/NROW(resp),
+NROW(resp[eumilk>0])/NROW(resp),
+NROW(resp[euprpmel>0])/NROW(resp),
+NROW(resp[eusoda>0])/NROW(resp),
+NROW(resp[eustores>0])/NROW(resp),
+NROW(resp[eustreason>0])/NROW(resp),
+NROW(resp[eutherm>0])/NROW(resp),
+NROW(resp[euwgt>0])/NROW(resp),
+NROW(resp[euwic>0])/NROW(resp),
+NROW(resp[exincome1>0])/NROW(resp))
+
+data_availability = data.frame(columns = columns, percent_avail = percent_avail)
+data_availability$all = 0
+
+data_availability$columns = factor(data_availability$columns, levels=data_availability[order(data_availability$percent_avail),"columns"])
+```
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(data_availability, aes(y=columns,x=all)) + geom_raster(aes(fill = percent_avail)) +
+  geom_text(aes(label = round(percent_avail,3)), fontface = "plain", size = 3, colour = "black") +
+  theme(axis.line=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(),
+  axis.title.x=element_blank(),axis.title.y=element_blank()) +
+  guides(fill=guide_legend(title="Percent Availability")) +
+  scale_fill_gradient2(low='white', high='green') +
+  xlim(-.5,.5)
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Correlation Matrix
+
+```{r include=FALSE}
+N = cor(resp)
+```
+
+```{r, echo=FALSE, fig.width=7, fig.height=7}
+corrplot(N, method="color",type="upper")
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Positive Correlation
+
+Top 20 positively correlated variables
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+zdf <- as.data.frame(as.table(M))
+zdf <- subset(zdf,Var1 != Var2)
+attach(zdf)
+list = head(zdf[order(-Freq),c(1,2,3)],20)
+list$combined = paste(list$Var1 ,",", list$Var2)
+list$all = 0
+list$combined = factor(list$combined, levels=list[order(list$Freq),"combined"])
+ggplot(list, aes(y=combined,x=all)) + geom_tile(colour = "black", width = .9, height = .9)+
+  geom_raster(aes(fill = Freq)) +
+  geom_text(aes(label = round(Freq,3)), fontface = "bold", size = 3, colour = "white") +
+  theme(axis.line=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(),
+  axis.title.x=element_blank(),axis.title.y=element_blank()) +
+  guides(fill=guide_legend(title="Correlation")) +
+  scale_fill_gradient2(low='white', high='blue') +
+  xlim(-.5,.5)
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Negative Correlation
+
+Top 20 negatively correlated variables
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+list = head(zdf[order(Freq),c(1,2,3)],20)
+list$combined = paste(list$Var1 ,",", list$Var2)
+list$all = 0
+list$combined = factor(list$combined, levels=list[order(-list$Freq),"combined"])
+ggplot(list, aes(y=combined,x=all)) + geom_tile(colour = "black", width = .9, height = .9)+
+  geom_raster(aes(fill = Freq)) +
+  geom_text(aes(label = round(Freq,3)), fontface = "bold", size = 3, colour = "white") +
+  theme(axis.line=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(),
+  axis.title.x=element_blank(),axis.title.y=element_blank()) +
+  guides(fill=guide_legend(title="Correlation")) +
+  scale_fill_gradient2(low='orange', high='white') +
+  xlim(-.5,.5)
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+## One-Dimensional Analysis{.tabset}
+
+### 
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### BMI
+
+```{r include=FALSE}
+count_erbmi = NROW(resp$erbmi[resp$erbmi>0])
+```
+
+Sample Count: *`r count_erbmi`*
+
+Calculation: *weight (kg) / [height (m)]2*
+
+```{r, echo=FALSE, fig.width=8, fig.height=4}
+bmi.dens = density(resp[erbmi>0]$erbmi)
+df.dens <- data.frame(x = bmi.dens$x, y = bmi.dens$y)
+cols <- c("Underweight"="yellow","Normal"="green","Overweight"="orange","Obese"="red")
+ggplot(resp[erbmi>0],aes(erbmi))+
+  scale_colour_manual(values=cols) +
+geom_area(data = subset(df.dens, x >= 29), aes(x=x,y=y,fill = "Obese")) +
+  geom_area(data = subset(df.dens, x <= 19.5), aes(x=x,y=y,fill = "Underweight")) +
+  geom_area(data = subset(df.dens, x >= 24 & x <= 30), aes(x=x,y=y,fill = "Overweight")) +
+  geom_area(data = subset(df.dens, x >= 18.5 & x <= 25), aes(x=x,y=y,fill = "Normal")) + 
+  geom_density(lwd=.5) +
+  labs(x = "BMI", y = "Density") +
+  theme(legend.title = element_blank())+
+  scale_x_discrete(name="BMI", limits=seq(10, 70, 10))
+
+summary(resp$erbmi[resp$erbmi>0])
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Weight
+
+```{r include=FALSE}
+count_euwgt = NROW(resp$euwgt[resp$euwgt>0])
+```
+
+Sample Count: *`r count_euwgt`*
+
+Self-Reported Response: *How much do you weight without shoes? (in pounds)*
+
+Note: *EUWGT is bottomcoded to 98 lbs and topcoded to 340 lbs.*
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+### Trasform pounds to Kilograms
+#resp$euwgt <- resp$euwgt*0.454
+ggplot(resp[euwgt>0],aes(euwgt,fill='fill'))+
+  geom_density(lwd=.5) +
+  labs(x = "Weight (lb)") +
+  theme(legend.position="none")
+summary(resp$euwgt[resp$euwgt>0])
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Height
+
+```{r include=FALSE}
+count_euhgt = NROW(resp$euhgt[resp$euhgt>0])
+```
+
+Sample Count: *`r count_euhgt`*
+
+Self-Reported Response: *How tall are you without shoes? (in inches)*
+
+Note: *EUHGT is bottomcoded to 56 inches and topcoded to 77 inches*
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+## First transform inches to centimeters
+# resp$euhgt <- resp$euhgt*2.54
+ggplot(resp[euhgt>0],aes(euhgt,fill='fill'))+
+  geom_density(lwd=.5) +
+  labs(x = "Height (in)") +
+  theme(legend.position="none")
+summary(resp$euhgt[resp$euhgt>0])
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Health
+
+```{r include=FALSE}
+count_eugenhth = NROW(resp$eugenhth[resp$eugenhth>0])
+```
+
+Sample Count: *`r count_eugenhth`*
+
+Self-Reported Response: *In general, would you say that your physical health was excellent, very good, good, fair, or poor?*
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+resp$eugenhth <- as.factor(resp$eugenhth)
+levels(resp$eugenhth) <- c("NA","NA","NA","Excellent","Very Good","Good","Fair","Poor")
+ggplot(resp[eugenhth%in%c("Excellent","Very Good","Good","Fair","Poor"),.N,by=eugenhth],aes(x = eugenhth,y = N,fill=eugenhth))+
+  geom_bar(stat = "identity") + ylab("Count") +
+ labs(x = "Health") +
+  theme(legend.title = element_blank()) 
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Exercise
+
+```{r include=FALSE}
+count_euexercise = NROW(resp$euexercise[resp$euexercise>0])
+```
+
+Self-Reported Response: *During the past 7 days, did you participate in any physical activities or exercises for fitness and health such as running, bicycling, working out in a gym, walking for exercise, or playing sports?* (Sample Count: *`r count_euexercise`*)
+
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+resp$euexercise <- as.factor(resp$euexercise)
+levels(resp$euexercise) <- c("NA","NA","NA","Yes","No")
+ggplot(resp[euexercise%in%c("Yes","No"),.N,by=euexercise],aes(x = euexercise,y = N,fill=euexercise))+ 
+  geom_bar(stat = "identity") +
+ labs(x = "Exercise") + ylab("Count") +
+  theme(legend.title = element_blank()) 
+```
+
+```{r include=FALSE}
+count_euexfreq = NROW(resp$euexfreq[resp$euexfreq>0])
+```
+
+Self-Reported Response: *How many times over the past 7 days did you take part in these activities?* (Sample Count: *`r count_euexfreq`*)
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[euexfreq>0],aes(euexfreq))+
+  geom_density(lwd=.5) +
+  labs(x = "Frequency of Exercise in Past Week") +
+  theme(legend.title = element_blank()) 
+summary(resp$euexfreq[resp$euexfreq>0])
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Enough Food
+
+```{r include=FALSE}
+count_eufdsit = NROW(resp$eufdsit[resp$eufdsit>0])
+```
+
+Self-Reported Response: *Which of the following statements best describes the amount of food eaten in your household in the last 30 days - enough food to eat, sometimes not enough to eat, or often not enough to eat?* (Sample Count: *`r count_eufdsit`*)
+
+```{r, echo=FALSE, fig.width=7, fig.height=4}
+resp$eufdsit <- as.factor(resp$eufdsit)
+levels(resp$eufdsit) <- c("NA","NA","NA","Enough to eat ","Sometimes not enough to eat","Often not enough to eat")
+ggplot(resp[eufdsit%in%c("Enough to eat ","Sometimes not enough to eat","Often not enough to eat"),.N,by=eufdsit],aes(x = eufdsit,y = N,fill=eufdsit))+geom_bar(stat = "identity") +
+  theme(axis.text.x=element_blank(), legend.title = element_blank()) + ylab("Count") +
+ labs(x = "Enough to Eat") 
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Fast Food
+
+```{r include=FALSE}
+count_eufastfd = NROW(resp$eufastfd[resp$eufastfd>0])
+```
+
+Self-Reported Response: *Thinking back over the last 7 days, did you purchase any: prepared food from a deli, carry-out, delivery food, or fast food?* (Sample Count: *`r count_eufastfd`*)
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+resp$eufastfd <- as.factor(resp$eufastfd)
+levels(resp$eufastfd) <- c("NA","NA","NA","Yes","No")
+ggplot(resp[eufastfd%in%c("Yes","No"),.N,by=eufastfd],aes(x = eufastfd,y = N,fill=eufastfd))+
+  geom_bar(stat = "identity") + ylab("Count") +
+ labs(x = "Pre-prepared Food") + theme(legend.title = element_blank()) 
+```
+
+```{r include=FALSE}
+count_eufastfdfrq = NROW(resp$eufastfdfrq[resp$eufastfdfrq>0])
+```
+
+Self-Reported Response: *How many times in the last 7 days did you purchase: prepared food from a deli, carry-out, delivery food, or fast food?* (Sample Count: *`r count_eufastfdfrq`*)
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(data=resp[resp$eufastfdfrq>=0], aes(eufastfdfrq)) + geom_histogram(binwidth=.5) +
+  xlab("Frequency Pre-Prepared Food") + ylab("Count") + theme(legend.title = element_blank()) 
+```
+
+```{r include=FALSE}
+count_eustores = NROW(resp$eustores[resp$eustores>0])
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Grocer
+
+Self-Reported Response: *Where do you get the majority of your groceries?* (Sample Count: *`r count_eustores`*)
+
+```{r, echo=FALSE, fig.width=8, fig.height=4}
+resp$eustores <- as.factor(resp$eustores)
+levels(resp$eustores) <- c("NA","NA","NA","Grocery store","Supercenter","Warehouse club","Drugstore or convenience store","Some other place")
+ggplot(resp[eustores%in%c("Grocery store","Supercenter","Warehouse club","Drugstore or convenience store","Some other place"),.N,by=eustores],aes(x = eustores,y = N,fill=eustores))+
+  geom_bar(stat = "identity") +
+  theme(axis.text.x=element_blank(), legend.title = element_blank(),axis.ticks.x=element_blank()) + ylab("Count") +
+ labs(x = "Store Type")
+```
+
+```{r include=FALSE}
+count_eustreason = NROW(resp$eustreason[resp$eustreason>0])
+```
+
+Self-Reported Response: *What is the primary reason you shop there?* (Sample Count: *`r count_eustreason`*)
+
+```{r, echo=FALSE, fig.width=8, fig.height=4}
+resp$eustreason <- as.factor(resp$eustreason)
+levels(resp$eustreason) <- c("NA","NA","NA","Price","Location","Quality of products ","Variety of products","Customer service","Other")
+ggplot(resp[eustreason%in%c("Price","Location","Quality of products ","Variety of products","Customer service","Other"),.N,by=eustreason],aes(x = eustreason,y = N,fill=eustreason))+
+  geom_bar(stat = "identity") +
+  theme(axis.text.x=element_blank(), legend.title = element_blank(), axis.ticks.x=element_blank()) + ylab("Count") +
+ labs(x = "Store Type Primary Reason")
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Drink
+
+```{r include=FALSE}
+count_eudrink = NROW(resp$eudrink[resp$eudrink>0])
+```
+
+Self-Reported Response: *Not including plain water, were there any other times yesterday when you were drinking any beverages?* (Sample Count: *`r count_eudrink`*)
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+resp$eudrink <- as.factor(resp$eudrink)
+levels(resp$eudrink) <- c("NA","NA","Yes","No")
+ggplot(resp[eudrink%in%c("Yes","No"),.N,by=eudrink],aes(x = eudrink,y = N,fill=eudrink))+ 
+  geom_bar(stat = "identity") +
+ labs(x = "Non-H20 Beverage") + ylab("Count") +
+  theme(legend.title = element_blank())
+```
+
+```{r include=FALSE}
+count_eusoda = NROW(resp$eusoda[resp$eusoda>0])
+```
+
+Self-Reported Response: *Were any of the beverages soft drinks such as cola, root beer, or gingerale?* (Sample Count: *`r count_eusoda`*)
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+resp$eusoda <- as.factor(resp$eusoda)
+levels(resp$eusoda) <- c("NA","NA","Yes","No")
+ggplot(resp[eusoda%in%c("Yes","No"),.N,by=eusoda],aes(x = eusoda,y = N,fill=eusoda))+ 
+  geom_bar(stat = "identity") +
+ labs(x = "Soda") + ylab("Count") +
+  theme(legend.title = element_blank())
+```
+
+
+```{r include=FALSE}
+count_eudietsoda = NROW(resp$eudietsoda[resp$eudietsoda>0])
+```
+
+Self-Reported Response: *Was the soft drink diet, regular or did you have both kinds?* (Sample Count: *`r count_eudietsoda`*)
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+resp$eudietsoda <- as.factor(resp$eudietsoda)
+levels(resp$eudietsoda) <- c("NA","NA","NA","Diet","Regular","Both")
+ggplot(resp[eudietsoda%in%c("Diet","Regular","Both"),.N,by=eudietsoda],
+       aes(x = eudietsoda,y = N,fill=eudietsoda))+ 
+  geom_bar(stat = "identity") +
+ labs(x = "Beverage Type") + ylab("Count") +
+  theme(legend.title = element_blank())
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Primary Eating
+
+```{r include=FALSE}
+count_ertpreat = NROW(resp$ertpreat[resp$ertpreat>0])
+```
+
+Sample Count: *`r count_ertpreat`*
+
+Self-Reported Response: *Total amount of time spent in primary eating and drinking (in minutes)*
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[ertpreat>0],aes(ertpreat,fill='fill'))+
+  geom_density(lwd=.5) +
+  theme(legend.position="none")
+summary(resp$ertpreat[resp$ertpreat>0])
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Secondary Eating
+
+```{r include=FALSE}
+count_ertseat = NROW(resp$ertseat[resp$ertseat>0])
+```
+
+Sample Count: *`r count_ertseat`*
+
+Self-Reported Response: *Total amount of time spent in secondary eating and drinking (in minutes)*
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[ertseat>0&ertseat<400],aes(ertseat,fill='fill'))+
+  geom_density(lwd=.5) +
+  theme(legend.position="none")
+summary(resp$ertseat[resp$ertseat>0])
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+###Income
+
+```{r include=FALSE}
+count_erincome = NROW(resp$erincome[resp$erincome>0])
+```
+
+Sample Count: *`r count_erincome`*
+
+Self-Reported Response: *Last month, was your total household income before taxes more or less than (amount) per month?*
+
+```{r, echo=FALSE, fig.width=10, fig.height=4}
+resp$erincome <- as.factor(resp$erincome)
+levels(resp$erincome) <- c("NA",
+"Income > 185% of poverty threshold",
+"Income < = 185% of poverty threshold",
+"130% of poverty threshold < Income<185% of poverty threshold",
+"Income > 130% of poverty threshold",
+"Income <= 130% of poverty threshold")
+ggplot(resp[erincome%in%c("Income > 185% of poverty threshold",
+"Income < = 185% of poverty threshold",
+"130% of poverty threshold < Income<185% of poverty threshold",
+"Income > 130% of poverty threshold",
+"Income <= 130% of poverty threshold"),.N,by=erincome],aes(x = erincome,y = N,fill=erincome))+ 
+  geom_bar(stat = "identity") +
+ labs(x = "Income") + ylab("Count") +
+  theme(axis.text.x=element_blank(), axis.ticks.x = element_blank(), legend.title = element_blank())
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### SNAP
+
+```{r include=FALSE}
+count_eusnap = NROW(resp$eusnap[resp$eusnap>0])
+```
+
+Sample Count: *`r count_eusnap`*
+
+Self-Reported Response: *In the past 30 days, did you or any member of this household receive SNAP or food stamp benefits?*
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+resp$eusnap <- as.factor(resp$eusnap)
+levels(resp$eusnap) <- c("NA","NA","NA","Yes","No")
+ggplot(resp[eusnap%in%c("Yes","No"),.N,by=eusnap],aes(x = eusnap,y = N,fill=eusnap))+ 
+  geom_bar(stat = "identity") +
+ labs(x = "SNAP/Food Stamp Benefits") + ylab("Count") +
+  theme(legend.title = element_blank())
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### WIC
+
+```{r include=FALSE}
+count_euwic = NROW(resp$euwic[resp$euwic>0])
+```
+
+Sample Count: *`r count_euwic`*
+
+Self-Reported Response: *In the last 30 days, did you or any member of your household receive benefits from the WIC program, that is, the Women, Infants, and Children program?*
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+resp$euwic <- as.factor(resp$euwic)
+levels(resp$euwic) <- c("NA","NA","NA","Yes","No")
+ggplot(resp[euwic%in%c("Yes","No"),.N,by=euwic],aes(x = euwic,y = N,fill=euwic))+ 
+  geom_bar(stat = "identity") +
+ labs(x = "WIC Program") + ylab("Count") +
+  theme(legend.title = element_blank())
+```
+
+```{r include=FALSE}
+count_erspemch = NROW(resp$erspemch[resp$erspemch>0])
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Employment
+
+Sample Count: *`r count_erspemch`*
+
+Self-Reported Response: *Change in spouse or unmarried partner's labor force status or full time or part time employment status between CPS and ATUS*
+
+```{r, echo=FALSE, fig.width=10, fig.height=4}
+resp$erspemch <- as.factor(resp$erspemch)
+levels(resp$erspemch) <- c("NA",
+  "Spouse/unmarried partner's employment status changed from full time to part time or hours vary",
+  "Spouse/unmarried partner's employment status changed from part time or hours vary to full time",
+  "Spouse/unmarried partner's labor force status changed from employed to unemployed or not in the labor force",
+  "Spouse/unmarried partner's labor force status changed from unemployed or not in the labor force to employed",
+  "Spouse/unmarried partner's employment status and/or labor force status did not change")
+ggplot(resp[erspemch%in%c(  
+  "Spouse/unmarried partner's employment status changed from full time to part time or hours vary",
+  "Spouse/unmarried partner's employment status changed from part time or hours vary to full time",
+  "Spouse/unmarried partner's labor force status changed from employed to unemployed or not in the labor force",
+  "Spouse/unmarried partner's labor force status changed from unemployed or not in the labor force to employed",
+  "Spouse/unmarried partner's employment status and/or labor force status did not change"),
+  .N,by=erspemch],aes(x = erspemch,y = N,fill=erspemch))+ 
+  geom_bar(stat = "identity") +
+ labs(x = "Employment Changes") + ylab("Count") +
+  theme(axis.text.x=element_blank(), axis.ticks.x = element_blank(),legend.title = element_blank())
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+## BMI versus...{.tabset}
+
+### 
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Weight
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[erbmi>0],aes(x = jitter(euwgt),y=jitter(erbmi))) + geom_point(size = .10, colour="orange") + geom_smooth(method='loess') + xlab("Weight") + ylab("BMI")
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Height
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[erbmi>0],aes(x = jitter(euhgt),y=jitter(erbmi))) + geom_point(size = .10, colour="orange")+ geom_smooth(method='loess') + xlab("Height") + ylab("BMI")
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Health
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[erbmi>0&eugenhth%in%c("Excellent","Very Good","Good","Fair","Poor")],aes(x = eugenhth,y = erbmi,fill=eugenhth))+  geom_boxplot() + ylab("BMI") + xlab("Health") + theme(legend.title = element_blank())
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Exercise
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[erbmi>0&euexercise%in%c("Yes","No")],aes(x = euexercise,y = erbmi,fill=euexercise))+  geom_boxplot() + ylab("BMI") + xlab("Exercise") + theme(legend.title = element_blank())
+```
+
+The indepedent samples t-test below shows with high confidence that people who exercise have, on average, a lower BMI than people who don't exercise.
+
+```{r echo=FALSE}
+x = resp[erbmi>0&euexercise%in%c("Yes")]$erbmi
+y = resp[erbmi>0&euexercise%in%c("No")]$erbmi
+t.test(x,y, alternative = "two.sided", paired = FALSE, conf.level = 0.95)
+```
+
+```{r include=FALSE}
+resp[euexercise%in%c("No")]$euexfreq = 0
+```
+
+```{r, echo=FALSE, fig.width=6, fig.height=4}
+ggplot(resp[erbmi>0 & euexfreq>=0],aes(x = jitter(erbmi),y=jitter(euexfreq))) + geom_point(size = .10, colour="green")+ geom_smooth(method='loess') + xlab("BMI") + ylab("Frequency of Exercise in Past Week")
+```
+
+As the frequency of exercise increases, the positive effects of exercise will diminish. Let's try taking the log transformation of the variable.
+
+```{r include=FALSE}
+resp$log_euexfreq = log(resp$euexfreq + 1)
+```
+
+```{r, echo=FALSE, fig.width=6, fig.height=4}
+ggplot(resp[erbmi>0 & euexfreq>=0],aes(x = jitter(erbmi),y=jitter(log_euexfreq))) + geom_point(size = .10, colour="green")+ geom_smooth(method='loess') + xlab("BMI") + ylab("Frequency of log(Exercise) in Past Week")
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Enough Food
+```{r, echo=FALSE, fig.width=6, fig.height=4}
+ggplot(resp[erbmi>0&eufdsit%in%c("Enough to eat ","Sometimes not enough to eat","Often not enough to eat")],aes(x = eufdsit,y = erbmi,fill=eufdsit))+  geom_boxplot() + ylab("BMI") + xlab("Enough Food") + theme(axis.text.x = element_blank(),legend.title = element_blank(),axis.ticks.x = element_blank())
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Fast Food
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[erbmi>0&eufastfd%in%c("Yes","No")],aes(x = eufastfd,y = erbmi,fill=eufastfd))+  geom_boxplot() + ylab("BMI") + xlab("Fast Food") + theme(legend.title = element_blank())
+```
+
+```{r include=FALSE}
+resp[eufastfd%in%c("No")]$eufastfdfrq = 0
+```
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[erbmi>0 & eufastfdfrq>=0],aes(x = jitter(eufastfdfrq),y=jitter(erbmi))) + geom_point(size = .5, colour="orange") + geom_smooth(method='loess') + xlab("Fast Food Amount") + ylab("BMI")
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Grocer
+```{r, echo=FALSE, fig.width=8, fig.height=4}
+ggplot(resp[erbmi>0&eustores%in%c("Grocery store","Supercenter","Warehouse club","Drugstore or convenience store","Some other place")],aes(x = eustores,y = erbmi,fill=eustores))+ xlab("Grocer") + ylab("BMI") + geom_boxplot() + theme(axis.text.x = element_blank(),legend.title = element_blank(),axis.ticks.x = element_blank())
+```
+
+```{r, echo=FALSE, fig.width=8, fig.height=4}
+ggplot(resp[erbmi>0&eustreason%in%c("Price","Location","Quality of products ","Variety of products","Customer service","Other")],aes(x = eustreason,y = erbmi,fill=eustreason))+ xlab("Grocer") + ylab("BMI") + geom_boxplot() + theme(axis.text.x = element_blank(),legend.title = element_blank(),axis.ticks.x = element_blank())
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Drink
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[erbmi>0&eudrink%in%c("Yes","No")],aes(x = eudrink,y = erbmi,fill=eudrink))+ xlab("Non-H20 Beverage") + ylab("BMI") + geom_boxplot() + theme(legend.title = element_blank())
+```
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[erbmi>0&eusoda%in%c("Yes","No")],aes(x = eusoda,y = erbmi,fill=eusoda))+ xlab("Soda") + ylab("BMI") + geom_boxplot() + theme(legend.title = element_blank())
+```
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[erbmi>0&eudietsoda%in%c("Diet","Regular","Both")],aes(x = eudietsoda,y = erbmi,fill=eudietsoda))+ xlab("Soda Type") + ylab("BMI") + geom_boxplot() + theme(legend.title = element_blank())
+```
+ 
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Primary Eating
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[erbmi>0],aes(x = jitter(erbmi),y=jitter(ertpreat)))+geom_point(size = .1, colour="green")+geom_smooth(method='loess')+ xlab("BMI") + ylab("Primary Eating (in minutes)")
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Secondary Eating
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[erbmi>0],aes(x = jitter(erbmi),y=jitter(ertseat)))+geom_point(size = .1, colour="green")+geom_smooth(method='loess')+ xlab("BMI") + ylab("Secondary Eating (in minutes)")
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Total Eating
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[erbmi>0],aes(x = jitter(erbmi),y=jitter(ertpreat + ertseat)))+geom_point(size = .1, colour="green")+geom_smooth(method='loess')+ xlab("BMI") + ylab("Total Eating (in minutes)")
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+###Income
+```{r, echo=FALSE, fig.width=10, fig.height=4}
+ggplot(resp[erbmi>0&erincome%in%c("Income > 185% of poverty threshold","Income < = 185% of poverty threshold","130% of poverty threshold < Income<185% of poverty threshold","Income > 130% of poverty threshold","Income <= 130% of poverty threshold")],aes(x = erincome,y = erbmi,fill=erincome))+ xlab("Income") + ylab("BMI") + geom_boxplot() +theme(axis.text.x = element_blank(),legend.title = element_blank(),axis.ticks.x = element_blank())
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+###SNAP
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[erbmi>0&eusnap%in%c("Yes","No")],aes(x = eusnap,y = erbmi,fill=eusnap))+ xlab("SNAP Program") + ylab("BMI") + geom_boxplot() + theme(legend.title = element_blank())
+```
+
+The indepedent samples t-test below shows with high confidence that the sample mean for BMI in the SNAP program is higher than the sample mean for people not in the program.
+
+```{r echo=FALSE}
+x = resp[erbmi>0&eusnap%in%c("Yes")]$erbmi
+y = resp[erbmi>0&eusnap%in%c("No")]$erbmi
+t.test(x,y, alternative = "two.sided", paired = FALSE, conf.level = 0.95)
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+###WIC
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+ggplot(resp[erbmi>0&euwic%in%c("Yes","No")],aes(x = euwic,y = erbmi,fill=euwic))+ xlab("WIC Program") + ylab("BMI") + geom_boxplot() + theme(legend.title = element_blank())
+```
+
+The indepedent samples t-test below shows with high confidence that the sample mean for BMI in the WIC program is higher than the sample mean for people not in the program.
+
+```{r echo=FALSE}
+x = resp[erbmi>0&euwic%in%c("Yes")]$erbmi
+y = resp[erbmi>0&euwic%in%c("No")]$erbmi
+t.test(x,y, alternative = "two.sided", paired = FALSE, conf.level = 0.95)
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Employment
+
+```{r, echo=FALSE, fig.width=10, fig.height=4}
+ggplot(resp[erbmi>0&erspemch%in%c("Spouse/unmarried partner's employment status changed from full time to part time or hours vary","Spouse/unmarried partner's employment status changed from part time or hours vary to full time","Spouse/unmarried partner's labor force status changed from employed to unemployed or not in the labor force","Spouse/unmarried partner's labor force status changed from unemployed or not in the labor force to employed","Spouse/unmarried partner's employment status and/or labor force status did not change")],aes(x = erspemch,y = erbmi,fill=erspemch))+ xlab("Employment Changes") + ylab("BMI") + geom_boxplot()+theme(axis.text.x = element_blank(),legend.title = element_blank(),axis.ticks.x = element_blank())
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+## Grocer versus...{.tabset}
+
+### 
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### SNAP
+```{r, echo=FALSE, fig.width=8, fig.height=4}
+dat <- data.frame(table(resp$eusnap,resp$eustores))
+names(dat) <- c("SNAP","Grocer","Count")
+ggplot(data=dat, aes(x=SNAP, y=Count, fill=Grocer)) + geom_bar(stat="identity")
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### WIC
+```{r, echo=FALSE, fig.width=8, fig.height=4}
+dat <- data.frame(table(resp$euwic,resp$eustores))
+names(dat) <- c("WIC","Grocer","Count")
+ggplot(data=dat, aes(x=WIC, y=Count, fill=Grocer)) + geom_bar(stat="identity")
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+## Multiple Linear Regression{.tabset}
+
+### 
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Predicting BMI
+
+```{r include=FALSE}
+linreg$Log_Exercise_Freq = log(linreg$euexfreq + 1)
+linreg$Sq_Log_Exercise_Freq = (linreg$Log_Exercise_Freq)^2
+names(linreg)[names(linreg) == 'euexfreq'] <- 'Exercise_Freq'
+names(linreg)[names(linreg) == 'erbmi'] <- 'BMI'
+names(linreg)[names(linreg) == 'eusnap'] <- 'SNAP'
+names(linreg)[names(linreg) == 'eugenhth1'] <- 'Excellent_Health'
+names(linreg)[names(linreg) == 'eugenhth2'] <- 'Very_Good_Health'
+names(linreg)[names(linreg) == 'eugenhth3'] <- 'Good_Health'
+names(linreg)[names(linreg) == 'eugenhth4'] <- 'Fair_Health'
+names(linreg)[names(linreg) == 'eugenhth'] <- 'Health'
+names(linreg)[names(linreg) == 'eufastfdfrq'] <- 'Fast_Food_Freq'
+names(linreg)[names(linreg) == 'ertpreat'] <- 'Primary_Eating'
+names(linreg)[names(linreg) == 'ertseat'] <- 'Secondary_Eating'
+
+model1 = lm(BMI ~ Log_Exercise_Freq, data = linreg)
+model2 = lm(BMI ~ Log_Exercise_Freq + Sq_Log_Exercise_Freq, data = linreg)
+model3 = lm(BMI ~ Excellent_Health + Very_Good_Health + Good_Health + Fair_Health, data = linreg)
+model4 = lm(BMI ~ Log_Exercise_Freq + Excellent_Health + Very_Good_Health + Good_Health + Fair_Health, data = linreg)
+model5 = lm(BMI ~ Log_Exercise_Freq + Excellent_Health + Very_Good_Health + Good_Health + Fair_Health + SNAP, data = linreg)
+
+robust_se.model1 = sqrt(diag(vcovHC(model1)))
+robust_se.model2 = sqrt(diag(vcovHC(model2)))
+robust_se.model3 = sqrt(diag(vcovHC(model3)))
+robust_se.model4 = sqrt(diag(vcovHC(model4)))
+robust_se.model5 = sqrt(diag(vcovHC(model5)))
+```
+
+```{r, results='asis', echo=FALSE}
+stargazer(model1, model2, model3, model4, model5, type = "html",
+title = "Linear Models Predicting BMI",
+se = list(robust_se.model1, robust_se.model2, robust_se.model3, robust_se.model4, robust_se.model5),
+star.cutoffs = c(0.05, 0.01, 0.001))
+```
+
+```{r include=FALSE}
+AIC1 = signif(AIC(model1),4)
+AIC2 = signif(AIC(model2),4)
+AIC3 = signif(AIC(model3),4)
+AIC4 = signif(AIC(model4),4)
+AIC5 = signif(AIC(model5),4)
+```
+
+&nbsp;
+
+&nbsp;
+
+ | | | 
+------------- | ------------- | ------------- | -------------  | -------------
+AIC (1) = `r AIC1` | AIC (2) = `r AIC2` | AIC (3) = `r AIC3` | AIC (4) = `r AIC4` | AIC (5) = `r AIC5` 
+
+&nbsp;
+
+&nbsp;
+
+#### {.tabset}
+
+#####
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+##### Model 1 Plots
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+plot(model1)
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+##### Model 2 Plots
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+plot(model2)
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+##### Model 3 Plots
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+plot(model3)
+```
+
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+##### Model 4 Plots
+
+Assumptions of Gauss-Markov Theorem
+
+1. Linear model
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PASS: This is a weak assumption
+
+2. Random sampling - independently and identical data
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PASS: Assumption based on prior knowledge of the data gathering process
+
+3. No perfect multicollinearity
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PASS: Based on correlation matrix
+
+4. Zero-conditional mean or exogeneity - unbiased estimator
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PASS: Based on the plot below
+
+5. Homoscedasticity - band is not uniform thickness (FAIL)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FAIL: There is evidence of heteroscedasticity, so we will use heteroskedasticity-robust standard errors 
+
+6. Normality of Residuals
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FAIL: There is slight upward tick on the qq plot; however we can leverage OLS asymptotics with the large sample size
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+plot(model4)
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+##### Model 5 Plots
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+plot(model5)
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Predicting Health
+
+```{r include=FALSE}
+modela = lm(Health ~ Log_Exercise_Freq, data = linreg)
+modelb = lm(Health ~ BMI, data = linreg)
+modelc = lm(Health ~ Fast_Food_Freq, data = linreg)
+modeld = lm(Health ~ Log_Exercise_Freq + BMI + Fast_Food_Freq, data = linreg)
+robust_se.modela = sqrt(diag(vcovHC(modela)))
+robust_se.modelb = sqrt(diag(vcovHC(modelb)))
+robust_se.modelc = sqrt(diag(vcovHC(modelc)))
+robust_se.modeld = sqrt(diag(vcovHC(modeld)))
+```
+
+
+```{r, results='asis', echo=FALSE}
+stargazer(modela, modelb, modelc, modeld, type = "html",
+title = "Linear Models Predicting Health",
+omit.stat = NULL,
+se = list(robust_se.modela, robust_se.modelb, robust_se.modelc, robust_se.modeld),
+star.cutoffs = c(0.05, 0.01, 0.001))
+```
+
+```{r include=FALSE}
+AICa = signif(AIC(modela),4)
+AICb = signif(AIC(modelb),4)
+AICc = signif(AIC(modelc),4)
+AICd = signif(AIC(modeld),4)
+```
+
+&nbsp;
+
+&nbsp;
+
+ | | | 
+------------- | ------------- | ------------- | -------------
+AIC (1) = `r AICa` | AIC (2) = `r AICb` | AIC (3) = `r AICc` | AIC (4) = `r AICd` 
+
+&nbsp;
+
+&nbsp;
+
+#### {.tabset}
+
+#####
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+##### Model 1 Plots
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+plot(modela)
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+##### Model 2 Plots
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+plot(modelb)
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+##### Model 3 Plots
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+plot(modelc)
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+##### Model 4 Plots
+
+```{r, echo=FALSE, fig.width=5, fig.height=4}
+plot(modeld)
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+## K-Means Clustering
+
+#### Using the numeric features:
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. BMI
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2. Health (from ordinal to numeric)
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3. Frequency of exercise
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4. Frequency of fast food
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 5. Time spent primary eating
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 6. Time spent secondary eating
+
+[Click here for Jupyter Notebook](http://localhost:8888/notebooks/Desktop/Interview/KMeansClustering.ipynb)
+
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+## What's Next?
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. Feature engineering
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2. Weighted K-means clustering
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3. New algorithms (hierarchical clustering)
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4. New Features
+
+#### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 5. More data
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+## Death by Visualization{.tabset}
+
+### 
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Exclude Secondary Eating
+
+```{r, echo=FALSE, fig.width=12, fig.height=8}
+ggplot(linreg, aes(x=Fast_Food_Freq, y=Primary_Eating, fill=Health, color=log(Exercise_Freq + 1), size=BMI^3)) +
+  geom_point(shape=21) +
+  scale_color_gradient(low="red", high="green") +
+  scale_size_continuous(range=c(1,12))
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Exclude Primary Eating
+
+```{r, echo=FALSE, fig.width=12, fig.height=8}
+ggplot(linreg, aes(x=Fast_Food_Freq, y=Secondary_Eating, fill=Health, color=log(Exercise_Freq + 1), size=BMI^3)) +
+  geom_point(shape=21) +
+  scale_color_gradient(low="red", high="green") +
+  scale_size_continuous(range=c(1,12))
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+### Primary + Secondary
+
+```{r, echo=FALSE, fig.width=12, fig.height=8}
+ggplot(linreg, aes(x=Fast_Food_Freq, y=Primary_Eating + Secondary_Eating, fill=Health, color=log(Exercise_Freq + 1), size=BMI^3)) +
+  geom_point(shape=21) +
+  scale_color_gradient(low="red", high="green") +
+  scale_size_continuous(range=c(1,12))
+```
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+##Resources
+
+[https://www.bls.gov/tus/ehmintcodebk1416.pdf](https://www.bls.gov/tus/ehmintcodebk1416.pdf)
+
+[https://www.bls.gov/tus/ehmquestionnaire1416.pdf](https://www.bls.gov/tus/ehmquestionnaire1416.pdf)
+
+[http://www.regulations.justia.com/regulations/fedreg/2016/05/02/2016-10187.html](http://www.regulations.justia.com/regulations/fedreg/2016/05/02/2016-10187.html)
+
+[https://www.kaggle.com/bls/eating-health-module-dataset](https://www.kaggle.com/bls/eating-health-module-dataset)
+
+[https://www.bls.gov/tus/ehdatafiles.htm](https://www.kaggle.com/bls/eating-health-module-dataset)
+
+[https://www.ers.usda.gov/publications/pub-details/?pubid=42817](https://www.ers.usda.gov/publications/pub-details/?pubid=42817)
+
+[http://www.stanford.edu/~hastie/Papers/gap.pdf](http://www.stanford.edu/~hastie/Papers/gap.pdf)
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
+
+---
